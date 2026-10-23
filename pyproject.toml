@@ -1,0 +1,13 @@
+[project]
+name = "imessage-ai-agent"
+version = "0.1.0"
+description = "Spec-driven Mac iMessage AI agent with SwiftUI generation gates"
+requires-python = ">=3.11"
+dependencies = ["openai>=1.40.0"]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
