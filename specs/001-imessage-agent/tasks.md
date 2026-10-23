@@ -4,7 +4,7 @@
 - [x] T002 Add Python/OpenAI agent MVP with offline mode.
 - [x] T003 Add unit tests that do not use API credits.
 - [x] T004 Add read-only Messages database adapter.
-- [x] T005 Add allowlist and explicit send confirmation gate.
+- [x] T005 Add validated allowlist and explicit send confirmation gate.
 - [x] T006 Add deterministic SwiftUI source generator.
 - [x] T007 Add Xcode/signing preflight and safe build wrapper.
 - [x] T008 Add README, verification commands, and blocked-state documentation.

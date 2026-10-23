@@ -14,11 +14,11 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 ## Milestone 2 — Secure Mac iMessage bridge
 
-**Status:** Implemented; external verification blocked
+**Status:** Complete locally; external verification blocked
 
-**Implemented:** Read-only SQLite access to `~/Library/Messages/chat.db`, recipient allowlist, explicit confirmation gate, and Messages AppleScript handoff.
+**Implemented:** Read-only SQLite access to `~/Library/Messages/chat.db`, validated recipient allowlist, explicit confirmation gate, actionable permission errors, and Messages AppleScript handoff.
 
-**Evidence:** Bridge allowlist/read-only/send-gate tests pass as part of the four passing tests.
+**Evidence:** Bridge allowlist, read-only, send-gate, handoff, and error-reporting tests pass as part of the six-test suite.
 
 **Blocked:** A real read-only check could not open the Messages database under current macOS permissions. No message was sent.
 
