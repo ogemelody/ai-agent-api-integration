@@ -23,9 +23,19 @@ def preflight() -> Preflight:
     identities = 0
     for line in result.stdout.splitlines():
         if "valid identities found" in line: identities = int(line.split()[0])
-    return Preflight(xcodebuild, developer_dir, identities, shutil.which("simctl") is not None)
+    simulator_available = shutil.which("simctl") is not None
+    if not simulator_available and xcodebuild:
+        simulator_available = subprocess.run(["xcrun", "--find", "simctl"], capture_output=True).returncode == 0
+    return Preflight(xcodebuild, developer_dir, identities, simulator_available)
 
-def build(project: Path) -> None:
+def _run(project: Path, action: str) -> None:
+    if not project.exists(): raise FileNotFoundError(f"project does not exist: {project}")
     state = preflight()
     if not state.ready_for_device_build: raise RuntimeError("Xcode/signing preflight is not ready; no build was started")
-    subprocess.run(["xcodebuild", "-project", str(project), "-scheme", project.stem, "build"], check=True)
+    subprocess.run(["xcodebuild", "-project", str(project), "-scheme", project.stem, action], check=True)
+
+def build(project: Path) -> None:
+    _run(project, "build")
+
+def test(project: Path) -> None:
+    _run(project, "test")
