@@ -10,4 +10,5 @@
 - [x] T008 Add README, verification commands, and blocked-state documentation.
 - [ ] T009 User approval: grant Messages Full Disk Access if desired and run a real read-only bridge check.
 - [ ] T010 User approval: add Apple ID/team to Xcode and connect/trust iPhone.
-- [ ] T011 User approval: perform a real signed build and install, then record observed result.
+- [x] T011 Add non-installing device preflight guard.
+- [ ] T012 User approval: perform a real signed build and install, then record observed result.

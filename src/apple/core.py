@@ -14,6 +14,16 @@ class Preflight:
     def ready_for_device_build(self) -> bool:
         return bool(self.xcodebuild and self.full_xcode_selected and self.identities)
 
+@dataclass(frozen=True)
+class DevicePreflight:
+    xcode_ready: bool
+    signing_ready: bool
+    connected_devices: tuple[str, ...]
+
+    @property
+    def ready_for_install(self) -> bool:
+        return self.xcode_ready and self.signing_ready and bool(self.connected_devices)
+
 def preflight() -> Preflight:
     xcodebuild = shutil.which("xcodebuild"); developer_dir = None
     if xcodebuild:
@@ -39,3 +49,12 @@ def build(project: Path) -> None:
 
 def test(project: Path) -> None:
     _run(project, "test")
+
+def device_preflight() -> DevicePreflight:
+    state = preflight()
+    devices: tuple[str, ...] = ()
+    if state.full_xcode_selected:
+        result = subprocess.run(["xcrun", "xctrace", "list", "devices"], text=True, capture_output=True)
+        if result.returncode == 0:
+            devices = tuple(line.strip() for line in result.stdout.splitlines() if "iPhone" in line and "Simulator" not in line)
+    return DevicePreflight(state.full_xcode_selected, bool(state.identities), devices)
