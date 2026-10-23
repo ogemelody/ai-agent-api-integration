@@ -4,7 +4,7 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 ## Milestone 1 — Python/OpenAI agent MVP
 
-**Status:** Complete locally
+**Status:** Complete locally as a source/project specification scaffold
 
 **Implemented:** Configurable OpenAI client with economical default `gpt-4o-mini`, deterministic offline mode, and a safety prompt against unsupported action claims.
 
@@ -26,11 +26,11 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 **Status:** Complete locally
 
-**Implemented:** Deterministic generator for an app entry point, `ContentView`, and README, with Swift identifier validation.
+**Implemented:** Deterministic generator for an app entry point, `ContentView`, README, and XcodeGen `project.yml`, with Swift identifier validation.
 
-**Evidence:** Generator test passes; `AgentDemo` source was generated successfully in a temporary output directory.
+**Evidence:** Generator test passes; `AgentDemo` source and project specification were generated successfully in a temporary output directory.
 
-**Not verified:** Opening or building the generated source in Xcode.
+**Not verified:** XcodeGen is not installed, so no `.xcodeproj` was generated; opening or building in Xcode remains part of Milestone 4.
 
 ## Milestone 4 — Xcode build/test/sign gates
 

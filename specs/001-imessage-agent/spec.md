@@ -11,7 +11,7 @@ Provide a safe Mac-hosted assistant that can answer a message using the OpenAI A
 - **FR-003:** The bridge reads recent text from the local Messages database when macOS permissions allow it.
 - **FR-004:** The bridge refuses recipients outside a local allowlist.
 - **FR-005:** The bridge refuses sending unless explicit confirmation is supplied.
-- **FR-006:** The generator creates a minimal SwiftUI source set from a valid app name.
+- **FR-006:** The generator creates a minimal SwiftUI source set and reproducible XcodeGen project specification from a valid app name.
 - **FR-007:** Apple tooling reports whether Xcode, simulators, and signing identities are present before build/install.
 - **FR-008:** Build/install actions stop when preflight is incomplete and do not change credentials or signing configuration automatically.
 
