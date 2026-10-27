@@ -4,7 +4,7 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 ## Milestone 1 — Python/OpenAI agent MVP
 
-**Status:** Complete locally as a source/project specification scaffold
+**Status:** Complete locally
 
 **Implemented:** Configurable OpenAI client with economical default `gpt-4o-mini`, deterministic offline mode, and a safety prompt against unsupported action claims.
 
@@ -34,19 +34,21 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 ## Milestone 4 — Xcode build/test/sign gates
 
-**Status:** Implemented; machine blocked
+**Status:** Complete locally; machine blocked
 
-**Implemented:** Preflight for full Xcode selection, simulator availability, and code-signing identities. The build wrapper refuses to start when preflight is incomplete.
+**Implemented:** Preflight for full Xcode selection, simulator availability, and code-signing identities. Build and test wrappers refuse to start when preflight is incomplete.
 
-**Evidence:** Current preflight reports Command Line Tools at `/Library/Developer/CommandLineTools`, no simulator utility, zero signing identities, and `ready_for_device_build=False`.
+**Evidence:** Apple guard tests pass. Current preflight reports Command Line Tools at `/Library/Developer/CommandLineTools`, no simulator utility, zero signing identities, and `ready_for_device_build=False`.
 
 ## Milestone 5 — iPhone installation
 
-**Status:** Not started; blocked pending approval and Apple setup
+**Status:** Preflight guard implemented; installation blocked pending approval and Apple setup
+
+**Implemented:** Non-installing device preflight that requires full Xcode, signing readiness, and a detected physical iPhone.
 
 **Required:** Full Xcode, Apple ID/team configured in Xcode, trusted connected iPhone, valid personal signing identity, and explicit approval for build/install.
 
-**Rule:** No device installation or success claim will occur automatically.
+**Evidence:** Device preflight guard tests pass. No device installation or success claim will occur automatically.
 
 ## Incremental GitHub delivery
 
