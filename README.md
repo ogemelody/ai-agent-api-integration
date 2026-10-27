@@ -33,7 +33,3 @@ The Apple wrapper stops when full Xcode, a simulator, a signing identity, or a c
 ## SDD documents
 
 The source of truth is under `specs/001-imessage-agent/`: constitution, requirements/specification, implementation plan, and executable task list.
-
-## Verification limits
-
-Local tests prove parsing, allowlist enforcement, offline agent behavior, SwiftUI file generation, and Apple preflight reporting. They do **not** prove access to Messages, iMessage delivery, OpenAI API connectivity, Apple signing, or iPhone installation. Those require user-controlled permissions, credentials, and hardware.
