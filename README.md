@@ -4,6 +4,7 @@ Spec-Driven Development project for a Mac-hosted AI agent that can answer messag
 
 
 ##  start
+![first message arrive.PNG](asset/first%20message%20arrive.PNG)
 
 ```bash
 uv sync
