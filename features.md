@@ -14,13 +14,13 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 ## Milestone 2 — Secure Mac iMessage bridge
 
-**Status:** Complete locally; external verification blocked
+**Status:** Verified bridge read/send milestone
 
 **Implemented:** Read-only SQLite access to `~/Library/Messages/chat.db`, validated recipient allowlist, explicit confirmation gate, actionable permission errors, and Messages AppleScript handoff.
 
-**Evidence:** Bridge allowlist, read-only, send-gate, handoff, and error-reporting tests pass as part of the six-test suite.
+**Evidence:** `uv sync` completed; the full suite passes with 10 tests (bridge: 4); `PYTHONPATH=src` fixed direct module discovery; Full Disk Access for PyCharm enabled a real read-only Messages database check; an unauthorized recipient was blocked; an allowlisted recipient was configured locally; and a test message was handed off through Messages and observed delivered on a physical iPhone.
 
-**Blocked:** A real read-only check could not open the Messages database under current macOS permissions. No message was sent.
+**Not implemented or not end-to-end verified:** automatic incoming message listening, AI-generated responses delivered through iMessage, and duplicate-message/self-reply loop prevention.
 
 ## Milestone 3 — Codex-generated SwiftUI projects
 
@@ -30,7 +30,7 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 **Evidence:** Generator test passes; `AgentDemo` source and project specification were generated successfully in a temporary output directory.
 
-**Not verified:** XcodeGen is not installed, so no `.xcodeproj` was generated; opening or building in Xcode remains part of Milestone 4.
+**Not verified:** Codex-driven native SwiftUI app creation and XcodeGen/project generation remain unverified; opening or building in Xcode remains part of Milestone 4.
 
 ## Milestone 4 — Xcode build/test/sign gates
 
@@ -50,6 +50,8 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 **Evidence:** Device preflight guard tests pass. No device installation or success claim will occur automatically.
 
+**Remaining:** Xcode build, signing, and installation on a physical iPhone.
+
 ## Incremental GitHub delivery
 
-The repository has a configured `origin` remote. The current implementation is ready as one small foundation milestone. Future milestones will use separate focused commits and pushes.
+The repository has a configured `origin` remote. This verified bridge milestone is recorded as a focused documentation update. Future implementation milestones will use separate focused commits and pushes.
