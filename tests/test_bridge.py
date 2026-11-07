@@ -29,3 +29,21 @@ def test_allowlist_validation_and_database_error_are_actionable(tmp_path):
     allow = tmp_path / "allow.json"; allow.write_text(json.dumps({"recipients": ["a"]}))
     with pytest.raises(PermissionError, match="Full Disk Access"):
         MessagesBridge(Allowlist.load(allow), tmp_path / "missing.db").recent_messages()
+
+
+def test_inbound_messages_include_stable_id_and_direction(tmp_path):
+    path = tmp_path / "allow.json"
+    path.write_text(json.dumps({"recipients": ["sender"], "senders": ["sender"]}))
+    db = tmp_path / "chat.db"
+    conn = sqlite3.connect(db)
+    conn.executescript("""
+        CREATE TABLE message (text TEXT, handle_id INTEGER, date INTEGER, is_from_me INTEGER);
+        CREATE TABLE handle (ROWID INTEGER PRIMARY KEY, id TEXT);
+    """)
+    conn.execute("INSERT INTO handle(ROWID, id) VALUES (1, 'sender')")
+    conn.execute("INSERT INTO message VALUES ('hello', 1, 42, 0)")
+    conn.commit(); conn.close()
+    messages = MessagesBridge(Allowlist.load(path), db).inbound_messages()
+    assert messages[0].message_id == "1"
+    assert messages[0].sender == "sender"
+    assert messages[0].is_from_me is False

@@ -8,6 +8,8 @@ from pathlib import Path
 @dataclass(frozen=True)
 class Allowlist:
     recipients: frozenset[str]
+    senders: frozenset[str] = frozenset()
+    local_identities: frozenset[str] = frozenset()
     @classmethod
     def load(cls, path: Path) -> "Allowlist":
         try:
@@ -17,9 +19,39 @@ class Allowlist:
         recipients = data.get("recipients") if isinstance(data, dict) else None
         if not isinstance(recipients, list) or not all(isinstance(item, str) and item.strip() for item in recipients):
             raise ValueError("allowlist must contain a 'recipients' list of non-empty strings")
-        return cls(frozenset(item.strip() for item in recipients))
+        senders = data.get("senders", [])
+        local_identities = data.get("local_identities", [])
+        for name, values in (("senders", senders), ("local_identities", local_identities)):
+            if not isinstance(values, list) or not all(isinstance(item, str) and item.strip() for item in values):
+                raise ValueError(f"allowlist '{name}' must be a list of non-empty strings")
+        return cls(
+            recipients=frozenset(item.strip() for item in recipients),
+            senders=frozenset(item.strip() for item in senders),
+            local_identities=frozenset(item.strip() for item in local_identities),
+        )
     def permits(self, recipient: str) -> bool:
         return recipient in self.recipients
+
+    def permits_sender(self, sender: str) -> bool:
+        return sender in self.senders
+
+    def is_local_identity(self, sender: str) -> bool:
+        return sender in self.local_identities
+
+
+@dataclass(frozen=True)
+class InboundMessage:
+    message_id: str
+    text: str
+    sender: str | None
+    timestamp: int | str | None
+    is_from_me: bool | None
+
+
+@dataclass(frozen=True)
+class MessageWatermark:
+    message_id: str
+    timestamp: int | str | None
 
 class MessagesBridge:
     def __init__(self, allowlist: Allowlist, database: Path | None = None):
@@ -36,6 +68,45 @@ class MessagesBridge:
         except sqlite3.Error as exc:
             raise PermissionError("could not read Messages database; grant this terminal/app Full Disk Access and retry") from exc
         return [{"text": text, "sender": sender or "unknown"} for text, sender in rows]
+
+    def inbound_messages(self, limit: int = 20) -> list[InboundMessage]:
+        """Return bounded message records without filtering away unsafe rows.
+
+        The conversation layer deliberately applies the inbound and self-reply
+        policy in Python so missing direction metadata fails closed.
+        """
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        try:
+            with sqlite3.connect(f"file:{self.database}?mode=ro", uri=True) as conn:
+                rows = conn.execute("""SELECT message.ROWID, message.text, handle.id,
+                    message.date, message.is_from_me
+                    FROM message LEFT JOIN handle ON message.handle_id = handle.ROWID
+                    WHERE message.text IS NOT NULL
+                    ORDER BY message.date ASC, message.ROWID ASC LIMIT ?""", (limit,)).fetchall()
+        except sqlite3.Error as exc:
+            raise PermissionError("could not read Messages database; grant this terminal/app Full Disk Access and retry") from exc
+        return [
+            InboundMessage(
+                message_id=str(row[0]),
+                text=row[1],
+                sender=row[2],
+                timestamp=row[3],
+                is_from_me=(bool(row[4]) if row[4] is not None else None),
+            )
+            for row in rows
+        ]
+
+    def latest_message_watermark(self) -> MessageWatermark | None:
+        """Return the latest text row used to establish an activation boundary."""
+        try:
+            with sqlite3.connect(f"file:{self.database}?mode=ro", uri=True) as conn:
+                row = conn.execute("""SELECT message.ROWID, message.date FROM message
+                    WHERE message.text IS NOT NULL
+                    ORDER BY message.date DESC, message.ROWID DESC LIMIT 1""").fetchone()
+        except sqlite3.Error as exc:
+            raise PermissionError("could not read Messages database; grant this terminal/app Full Disk Access and retry") from exc
+        return MessageWatermark(str(row[0]), row[1]) if row else None
 
     def send(self, recipient: str, text: str, *, confirmed: bool = False) -> None:
         if not self.allowlist.permits(recipient): raise PermissionError("recipient is not in the configured allowlist")
