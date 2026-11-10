@@ -1,0 +1,22 @@
+# Tasks
+
+- [x] T201 Define Feature 002 message, candidate, processing-state, approval, sender-policy, and cost-policy contracts.
+- [x] T202 Define the stable inbound Messages identity and fail-closed direction mapping.
+- [x] T203 Extend the read-only bridge query for bounded inbound text discovery and sender metadata.
+- [x] T204 Add a separate inbound sender allowlist while preserving the existing outbound recipient allowlist.
+- [x] T205 Add inbound-only filtering and self-reply loop prevention before any agent/API call.
+- [x] T206 Add an atomic persistent state store for claims, duplicates, pending approvals, terminal states, and retryable failures.
+- [x] T207 Reuse the agent client for response generation with injected offline/test dependencies.
+- [x] T208 Add credential-safe API error handling and redacted diagnostics.
+- [x] T209 Add configurable model, input/output bounds, request interval, and per-run cost controls.
+- [x] T210 Add explicit review, approve, reject, cancel, and expiry workflow for candidate replies.
+- [x] T211 Ensure approval invokes the existing outbound allowlist and confirmation gate exactly once.
+- [x] T212 Add tests for unauthorized senders, inbound-only filtering, duplicates, restart recovery, concurrency, self-replies, and no-shell behavior.
+- [x] T213 Add tests for API credentials, timeouts, rate limits, quota errors, malformed responses, database errors, and state-store failures.
+- [x] T214 Add tests proving cost limits and approval gates prevent unintended API calls or message handoffs.
+- [x] T215 Run the full test suite and document Feature 002 verification only after implementation is complete.
+- [x] T216 Add secure project-root `.env` loading for `OPENAI_API_KEY` without environment override or credential output.
+- [x] T217 Add explicit first-run activation with a durable watermark that skips historical messages and survives restart.
+- [x] T218 Make pending-queue output private-safe by default with explicit opt-in for sensitive fields.
+- [x] T219 Add mocked startup, history exclusion, restart, same-Apple-Account loop, dotenv, and private-output tests.
+- [x] T220 Replace oldest-row polling with a durable `(date, ROWID)` cursor, paginate same-timestamp rows without loss, and document the regression coverage.
