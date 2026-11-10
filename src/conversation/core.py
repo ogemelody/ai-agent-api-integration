@@ -227,11 +227,31 @@ class ConversationProcessor:
         raw = self.state.get_metadata("activation_watermark")
         if raw is None:
             raise ActivationRequiredError("conversation is not activated; run with --activate before polling")
+        return self._decode_watermark(raw, "conversation activation watermark is invalid; activate again")
+
+    @staticmethod
+    def _decode_watermark(raw: str, error_message: str) -> MessageWatermark:
         try:
             payload = json.loads(raw)
             return MessageWatermark(str(payload["message_id"]), payload.get("timestamp"))
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-            raise ActivationRequiredError("conversation activation watermark is invalid; activate again") from exc
+            raise ActivationRequiredError(error_message) from exc
+
+    def _poll_watermark(self, activation_watermark: MessageWatermark) -> MessageWatermark | None:
+        raw = self.state.get_metadata("poll_watermark")
+        if raw is None:
+            return activation_watermark if activation_watermark.message_id else None
+        watermark = self._decode_watermark(raw, "conversation polling watermark is invalid")
+        return watermark if watermark.message_id else None
+
+    def _save_poll_watermark(self, watermark: MessageWatermark) -> None:
+        self.state.set_metadata(
+            "poll_watermark",
+            json.dumps(
+                {"message_id": watermark.message_id, "timestamp": watermark.timestamp},
+                separators=(",", ":"),
+            ),
+        )
 
     @staticmethod
     def _after_watermark(message: InboundMessage, watermark: MessageWatermark) -> bool:
@@ -249,14 +269,23 @@ class ConversationProcessor:
             return message.message_id != watermark.message_id
 
     def poll(self, limit: int = 20) -> list[ProcessingRecord]:
-        watermark = self._watermark()
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        activation_watermark = self._watermark()
+        watermark = self._poll_watermark(activation_watermark)
+        # CostPolicy limits are per poll invocation, not for the lifetime of the
+        # processor object.
+        self._requests = 0
+        self._last_request = None
         records: list[ProcessingRecord] = []
-        for message in self.bridge.inbound_messages(limit):
-            if not self._after_watermark(message, watermark):
-                continue
+        for message in self.bridge.inbound_messages(limit, after=watermark):
             record = self._process(message)
             if record is not None:
                 records.append(record)
+            # Advance only after the row has a durable processing record. If a
+            # run stops between rows, the next run re-reads at most one already
+            # claimed row rather than silently skipping anything.
+            self._save_poll_watermark(MessageWatermark(message.message_id, message.timestamp))
         return records
 
     def _process(self, message: InboundMessage) -> ProcessingRecord | None:

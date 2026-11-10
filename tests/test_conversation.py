@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from bridge.core import Allowlist, InboundMessage
+from bridge.core import Allowlist, InboundMessage, MessageWatermark
 from conversation.core import ConversationProcessor, CostPolicy, ProcessingStateStore
 
 
@@ -15,14 +15,26 @@ class FakeBridge:
         self.allowlist = Allowlist(frozenset(recipients), frozenset(senders), frozenset({"self", "apple-account"}))
         self.sent = []
 
-    def inbound_messages(self, limit):
-        return self.messages[:limit]
+    def inbound_messages(self, limit, *, after=None):
+        def cursor(item):
+            try:
+                return (int(item.timestamp), 0, int(item.message_id))
+            except (TypeError, ValueError):
+                return (int(item.timestamp), 1, item.message_id)
+
+        messages = sorted(self.messages, key=cursor)
+        if after is not None:
+            after_cursor = cursor(InboundMessage(after.message_id, "", None, after.timestamp, None))
+            messages = [
+                item for item in messages
+                if cursor(item) > after_cursor
+            ]
+        return messages[:limit]
 
     def latest_message_watermark(self):
         if not self.messages:
             return None
         latest = self.messages[-1]
-        from bridge.core import MessageWatermark
         return MessageWatermark(latest.message_id, latest.timestamp)
 
     def send(self, recipient, text, *, confirmed=False):
@@ -46,8 +58,8 @@ class FakeAgent:
         return self.reply
 
 
-def message(source_id="1", sender="allowed", text="hello", is_from_me=False):
-    return InboundMessage(source_id, text, sender, 1, is_from_me)
+def message(source_id="1", sender="allowed", text="hello", is_from_me=False, timestamp=1):
+    return InboundMessage(source_id, text, sender, timestamp, is_from_me)
 
 
 def activated_processor(bridge, agent, state_path):
@@ -75,6 +87,20 @@ def test_poll_requires_explicit_activation_and_skips_first_run_history(tmp_path)
     assert [call[0] for call in agent.calls] == ["hello"]
 
 
+def test_poll_watermark_paginates_same_timestamp_rows_without_loss(tmp_path):
+    bridge = FakeBridge([message("1", timestamp=10)])
+    processor = ConversationProcessor(
+        bridge, FakeAgent(), ProcessingStateStore(tmp_path / "state.sqlite"),
+        policy=CostPolicy(min_request_interval_seconds=0),
+    )
+    processor.activate()
+    bridge.messages.extend([message("2", timestamp=11), message("3", timestamp=11), message("4", timestamp=11)])
+
+    assert [record.source_id for record in processor.poll(limit=2)] == ["2", "3"]
+    assert [record.source_id for record in processor.poll(limit=2)] == ["4"]
+    assert processor.poll(limit=2) == []
+
+
 def test_activation_watermark_survives_restart_and_same_apple_account_is_ignored(tmp_path):
     state_path = tmp_path / "state.sqlite"
     bridge = FakeBridge([message("1", sender="allowed")], senders=("allowed", "apple-account"))
@@ -93,7 +119,7 @@ def test_activation_watermark_survives_restart_and_same_apple_account_is_ignored
     restarted_agent = FakeAgent()
     restarted = ConversationProcessor(bridge, restarted_agent, ProcessingStateStore(state_path), policy=CostPolicy(min_request_interval_seconds=0))
     restarted_records = restarted.poll()
-    assert [record.source_id for record in restarted_records] == ["2", "3"]
+    assert restarted_records == []
     assert restarted_agent.calls == []
 
 
@@ -128,7 +154,7 @@ def test_allowed_inbound_message_is_queued_once_across_restart(tmp_path):
 
     second_agent = FakeAgent()
     second = ConversationProcessor(bridge, second_agent, ProcessingStateStore(state_path), policy=CostPolicy(min_request_interval_seconds=0))
-    assert second.poll()[0].status == "pending_approval"
+    assert second.poll() == []
     assert second_agent.calls == []
 
 
@@ -274,7 +300,7 @@ def test_empty_and_malformed_agent_responses_are_safe(tmp_path):
 
 def test_messages_database_failure_fails_closed_without_api_or_send(tmp_path):
     class DatabaseFailureBridge(FakeBridge):
-        def inbound_messages(self, limit):
+        def inbound_messages(self, limit, *, after=None):
             raise PermissionError("Messages database unavailable")
 
     agent = FakeAgent()

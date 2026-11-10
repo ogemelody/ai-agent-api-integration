@@ -1,6 +1,6 @@
 import json, sqlite3
 import pytest
-from bridge.core import Allowlist, MessagesBridge
+from bridge.core import Allowlist, MessageWatermark, MessagesBridge
 
 def test_allowlist_and_read_only_messages(tmp_path):
     allowlist = tmp_path / "allow.json"; allowlist.write_text(json.dumps({"recipients": ["a"]}))
@@ -47,3 +47,25 @@ def test_inbound_messages_include_stable_id_and_direction(tmp_path):
     assert messages[0].message_id == "1"
     assert messages[0].sender == "sender"
     assert messages[0].is_from_me is False
+
+
+def test_inbound_messages_uses_date_rowid_cursor_for_chronological_pagination(tmp_path):
+    allowlist = Allowlist(frozenset({"sender"}), frozenset({"sender"}))
+    db = tmp_path / "chat.db"
+    conn = sqlite3.connect(db)
+    conn.executescript("""
+        CREATE TABLE message (text TEXT, handle_id INTEGER, date INTEGER, is_from_me INTEGER);
+        CREATE TABLE handle (ROWID INTEGER PRIMARY KEY, id TEXT);
+    """)
+    conn.execute("INSERT INTO handle(ROWID, id) VALUES (1, 'sender')")
+    conn.executemany(
+        "INSERT INTO message(text, handle_id, date, is_from_me) VALUES (?, 1, ?, 0)",
+        [("old", 10), ("first", 20), ("second", 20), ("new", 30)],
+    )
+    conn.commit(); conn.close()
+
+    bridge = MessagesBridge(allowlist, db)
+    page = bridge.inbound_messages(limit=2, after=MessageWatermark("1", 10))
+    assert [(item.text, item.timestamp) for item in page] == [("first", 20), ("second", 20)]
+    next_page = bridge.inbound_messages(limit=2, after=MessageWatermark(page[-1].message_id, page[-1].timestamp))
+    assert [item.text for item in next_page] == ["new"]

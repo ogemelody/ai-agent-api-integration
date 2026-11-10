@@ -69,7 +69,12 @@ class MessagesBridge:
             raise PermissionError("could not read Messages database; grant this terminal/app Full Disk Access and retry") from exc
         return [{"text": text, "sender": sender or "unknown"} for text, sender in rows]
 
-    def inbound_messages(self, limit: int = 20) -> list[InboundMessage]:
+    def inbound_messages(
+        self,
+        limit: int = 20,
+        *,
+        after: MessageWatermark | None = None,
+    ) -> list[InboundMessage]:
         """Return bounded message records without filtering away unsafe rows.
 
         The conversation layer deliberately applies the inbound and self-reply
@@ -79,11 +84,25 @@ class MessagesBridge:
             raise ValueError("limit must be positive")
         try:
             with sqlite3.connect(f"file:{self.database}?mode=ro", uri=True) as conn:
-                rows = conn.execute("""SELECT message.ROWID, message.text, handle.id,
+                query = """SELECT message.ROWID, message.text, handle.id,
                     message.date, message.is_from_me
                     FROM message LEFT JOIN handle ON message.handle_id = handle.ROWID
-                    WHERE message.text IS NOT NULL
-                    ORDER BY message.date ASC, message.ROWID ASC LIMIT ?""", (limit,)).fetchall()
+                    WHERE message.text IS NOT NULL"""
+                parameters: list[object] = []
+                if after is not None:
+                    try:
+                        row_id = int(after.message_id)
+                    except (TypeError, ValueError) as exc:
+                        raise ValueError("message watermark ID must be an integer") from exc
+                    if after.timestamp is None:
+                        query += " AND message.date IS NULL AND message.ROWID > ?"
+                        parameters.append(row_id)
+                    else:
+                        query += " AND (message.date > ? OR (message.date = ? AND message.ROWID > ?))"
+                        parameters.extend([after.timestamp, after.timestamp, row_id])
+                query += " ORDER BY message.date ASC, message.ROWID ASC LIMIT ?"
+                parameters.append(limit)
+                rows = conn.execute(query, parameters).fetchall()
         except sqlite3.Error as exc:
             raise PermissionError("could not read Messages database; grant this terminal/app Full Disk Access and retry") from exc
         return [

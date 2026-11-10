@@ -40,6 +40,7 @@ The state machine must be monotonic for a message during normal operation: a mes
 - **FR-217:** The CLI requires explicit activation before polling. First-run activation records a durable watermark for the latest text message and skips all messages at or before that boundary; a restart reuses the same watermark.
 - **FR-218:** The CLI may load only `OPENAI_API_KEY` from the project-root `.env`, must never override an already-set environment variable, and must never print or persist the credential.
 - **FR-219:** Pending-queue output omits sender identifiers and generated reply text by default. Private fields may be shown only through an explicit operator opt-in.
+- **FR-220:** Inbound polling uses a durable chronological cursor `(message.date, message.ROWID)` strictly after the activation boundary. Each bounded page advances the cursor only after durable processing, so rows beyond the limit remain eligible for a later poll, including rows with identical timestamps. The activation watermark is preserved and is never reset by polling or restart.
 
 ## Non-functional requirements
 
@@ -64,6 +65,7 @@ The state machine must be monotonic for a message during normal operation: a mes
 11. On first run, polling before activation fails closed; explicit activation records the latest available watermark and returns no historical messages. A later message is eligible, while a restarted processor continues from the same watermark.
 12. A project-root `.env` key is loaded only when `OPENAI_API_KEY` is absent from the environment; an existing environment value wins, and neither value appears in CLI output or logs.
 13. Default pending-queue output contains only redacted identifiers/status and excludes private sender and reply text.
+14. With more eligible rows than the polling limit, repeated polls process every row exactly once in `(date, ROWID)` order; old history is excluded, same-timestamp rows are paginated deterministically, and a restart resumes after the persisted polling cursor.
 
 ## Out of scope
 

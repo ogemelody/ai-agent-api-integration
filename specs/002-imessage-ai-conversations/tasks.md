@@ -19,3 +19,4 @@
 - [x] T217 Add explicit first-run activation with a durable watermark that skips historical messages and survives restart.
 - [x] T218 Make pending-queue output private-safe by default with explicit opt-in for sensitive fields.
 - [x] T219 Add mocked startup, history exclusion, restart, same-Apple-Account loop, dotenv, and private-output tests.
+- [x] T220 Replace oldest-row polling with a durable `(date, ROWID)` cursor, paginate same-timestamp rows without loss, and document the regression coverage.

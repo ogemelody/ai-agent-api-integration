@@ -6,7 +6,7 @@ Define typed inbound-message, candidate-reply, processing-state, approval, and c
 
 ## Phase 2 — Safe inbound discovery
 
-Extend the read-only bridge query to return stable IDs, direction metadata, sender identifiers, text, and timestamps. Add inbound-only filtering, sender allowlist checks, self-reply protection, bounded reads, and categorized permission/database errors. Do not add a send side effect to discovery.
+Extend the read-only bridge query to return stable IDs, direction metadata, sender identifiers, text, and timestamps. Add inbound-only filtering, sender allowlist checks, self-reply protection, bounded reads, and categorized permission/database errors. Use a durable `(date, ROWID)` polling cursor in the bridge query so bounded reads paginate chronologically without repeatedly scanning old history. Do not add a send side effect to discovery.
 
 ## Phase 3 — Persistent idempotent processing
 
@@ -22,7 +22,7 @@ Implement a review/approve/reject workflow that binds approval to one pending so
 
 ## Phase 6 — Activation and operator safety
 
-Require explicit first-run activation that stores the latest text-message watermark in the durable state store and skips all earlier rows. Load only `OPENAI_API_KEY` from the project-root `.env` when the environment does not already provide it. Keep default pending-queue output limited to redacted IDs and statuses, with private fields available only through explicit opt-in.
+Require explicit first-run activation that stores the latest text-message watermark in the durable state store and skips all earlier rows. Keep that activation boundary immutable while persisting a separate polling cursor after each durably recorded row; this prevents loss when a page is full or a process restarts. Load only `OPENAI_API_KEY` from the project-root `.env` when the environment does not already provide it. Keep default pending-queue output limited to redacted IDs and statuses, with private fields available only through explicit opt-in.
 
 ## Phase 7 — Verification and documentation
 
