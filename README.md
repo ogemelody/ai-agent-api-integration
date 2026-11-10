@@ -2,7 +2,7 @@
 
 Spec-Driven Development project for a Mac-hosted AI agent that can answer messages, generate SwiftUI projects, and prepare iPhone builds with explicit approval gates.
 
-The Python environment is installed with `uv`, and the current bridge milestone has been verified on macOS: the Messages database was read after granting Full Disk Access to PyCharm, an allowlisted test message was handed off through Messages, and delivery was observed on a physical iPhone in the Messages app. This does not yet mean that the full AI reply loop is implemented.
+The Python environment is installed with `uv`. The bridge milestone and Feature 002 conversation path have been verified on macOS. Feature 002 includes explicit activation, sender filtering, offline and live OpenAI Responses API reply generation, pending approval, and an approval-gated Messages handoff. See [`docs/testing-report.md`](docs/testing-report.md) for dated evidence and scope boundaries.
 
 
 ## Start
@@ -48,6 +48,14 @@ The allowlist file is local configuration and must never be committed. Keep real
 - If sending is rejected, check the local allowlist and the explicit `--confirm-send` flag. Never bypass the allowlist.
 - A successful Messages handoff is not proof of delivery; verify the result in Messages on the recipient device.
 
+### Verified Feature 002 functionality
+
+- Authorized inbound iMessages are detected and unauthorized senders are ignored.
+- Offline replies remain approval-gated; a live `gpt-4o-mini` Responses API reply was generated in `openai_responses` mode and queued as `pending_approval`.
+- Explicit approval completed the Messages handoff, and the reply appeared in Mac Messages. A read receipt was observed separately as device/application verification.
+- Activation watermarks persist across restarts, and polling uses a durable chronological `(message.date, message.ROWID)` cursor so bounded pagination does not lose post-activation rows, including same-timestamp rows.
+- The automated suite passes with 36 tests.
+
 ## SwiftUI and Apple verification
 
 ```bash
@@ -61,10 +69,6 @@ The Apple wrapper stops when full Xcode, a simulator, a signing identity, or a c
 
 The following remain incomplete or await end-to-end verification:
 
-- Live OpenAI API integration.
-- Automatic incoming message listener.
-- AI-generated responses delivered through iMessage.
-- Duplicate-message and self-reply loop prevention.
 - Codex-driven native SwiftUI app creation.
 - Xcode build, signing, and installation on a physical iPhone.
 

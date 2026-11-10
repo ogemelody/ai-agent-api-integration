@@ -20,7 +20,7 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 
 **Evidence:** `uv sync` completed; the full suite passes with 10 tests (bridge: 4); `PYTHONPATH=src` fixed direct module discovery; Full Disk Access for PyCharm enabled a real read-only Messages database check; an unauthorized recipient was blocked; an allowlisted recipient was configured locally; and a test message was handed off through Messages and observed delivered on a physical iPhone.
 
-**Not implemented or not end-to-end verified:** automatic incoming message listening, AI-generated responses delivered through iMessage, and duplicate-message/self-reply loop prevention.
+**At this milestone:** automatic incoming message listening, AI-generated responses delivered through iMessage, and duplicate-message/self-reply loop prevention were not yet part of the bridge-only verification. Feature 002 verification is recorded under Milestone 6.
 
 ## Milestone 3 — Codex-generated SwiftUI projects
 
@@ -55,3 +55,13 @@ This is the SDD implementation ledger. A milestone is complete only when its loc
 ## Incremental GitHub delivery
 
 The repository has a configured `origin` remote. This verified bridge milestone is recorded as a focused documentation update. Future implementation milestones will use separate focused commits and pushes.
+
+## Milestone 6 — Feature 002 iMessage AI conversations
+
+**Status:** Live integration verified on 2026-11-10
+
+**Implemented:** Explicit activation with durable watermark persistence; sender-filtered inbound discovery; self-reply and duplicate protection; offline and OpenAI Responses API modes; bounded processing; pending-approval queue; explicit approval handoff; and durable chronological polling with `(message.date, message.ROWID)` pagination.
+
+**Evidence:** An authorized inbound iMessage was detected, an unauthorized sender was ignored, an offline approval-gated reply was tested, and a live `gpt-4o-mini` reply was generated in `openai_responses` mode and queued as `pending_approval`. Explicit approval completed the Messages handoff, and the reply appeared in Mac Messages. A read receipt was observed separately as device/application verification. The automated suite passes with 36 tests.
+
+**Boundary:** The successful Messages handoff and the independent read-receipt observation are reported separately; the former is not itself proof of device delivery. No private message content, identifiers, credentials, screenshots, or database contents are recorded.
